@@ -10,6 +10,7 @@ DISTANCE_BETWEEN_SOCKS = 0.5
 BASE_THICKNESS = 2
 SIDE_HEIGHT = 5
 TEXT_SIZE = 5
+SIDE_THICKNESS = 1
 
 def chopped_cube(size):
     sphr1 = sphere(d=size*1.5)
@@ -66,10 +67,12 @@ def create_base(width, height, depth, socket_name):
     return base
 
 def create_socket_organizer(sockets, base_depth):
-    base = create_base(DISTANCE_BETWEEN_SOCKS, SIDE_HEIGHT+BASE_THICKNESS, base_depth, "")
+    base = create_base(SIDE_THICKNESS, SIDE_HEIGHT+BASE_THICKNESS, base_depth, "")
     base = up((SIDE_HEIGHT+BASE_THICKNESS)/2)(base)
-    offset = DISTANCE_BETWEEN_SOCKS/2
+    offset = SIDE_THICKNESS/2
     organizer = right(offset)(base)
+    offset += SIDE_THICKNESS/2
+
     for s in sockets:
         base_width = s[1]+TOLERANCE+DISTANCE_BETWEEN_SOCKS
 
@@ -87,27 +90,58 @@ def create_socket_organizer(sockets, base_depth):
         # offset needs to take into account the current and previous bases
         offset += (base_width/2)
     
-    offset += DISTANCE_BETWEEN_SOCKS/2
-    base = create_base(DISTANCE_BETWEEN_SOCKS, SIDE_HEIGHT+BASE_THICKNESS, base_depth, "")
+    base = create_base(SIDE_THICKNESS, SIDE_HEIGHT+BASE_THICKNESS, base_depth, "")
     base = up((SIDE_HEIGHT+BASE_THICKNESS)/2)(base)
+    offset += SIDE_THICKNESS/2
     organizer += right(offset)(base)
-    offset += DISTANCE_BETWEEN_SOCKS/2
+    offset += SIDE_THICKNESS/2
 
+    print(f"Total width: {offset}")
     return intersection() (
         # Round the corners
         translate([offset/2,-(SIDE_HEIGHT+BASE_THICKNESS)/4,(SIDE_HEIGHT+BASE_THICKNESS)/2])(rounded_box((offset, base_depth, SIDE_HEIGHT+BASE_THICKNESS+5), 2, sidesonly=True)),
         organizer
     )
-    return organizer
 
-def assembly():
+def assembly1():
     sockets_3_8 = [
         ("7/8", 29.85, 29.15),
         ("13/16", 27.9, 29.6),
         ("3/4", 25.85, 25.8),
+        ("11/16", 23.9, 25.5),
+    ]
+    return create_socket_organizer(sockets_3_8, sockets_3_8[0][1]+10)
+
+def assembly2():
+    sockets_3_8 = [
+        ("5/8", 21.8, 25.5),
+        ("9/16", 19.8, 25.5),
+        ("1/2", 17.9, 25.5),
+        ("7/16", 17, 25.5),
+        ("3/8", 17, 25.5),
+        ('->1/4', 16.1, 25.5),
+    ]
+    return create_socket_organizer(sockets_3_8, sockets_3_8[0][1]+10)
+
+def assembly3():
+    sockets_3_8 = [
+        ("19", 25.9, 25.5),
+        ("17", 24.0, 25.5),
+        ("16", 21.9, 25.5),
+        ("15", 21.8, 25.5),
+    ]
+    return create_socket_organizer(sockets_3_8, sockets_3_8[0][1]+10)
+
+def assembly4():
+    sockets_3_8 = [
+        ("14", 19.8, 25.5),
+        ("13", 18.0, 25.5),
+        ("12", 17.0, 25.5),
+        ("11", 17.0, 25.5),
+        ("10", 17, 25.5),
     ]
     return create_socket_organizer(sockets_3_8, sockets_3_8[0][1]+10)
 
 if __name__ == '__main__':
-    a = assembly()
+    a = assembly4()
     scad_render_to_file(a, file_header=f'$fn = {SEGMENTS};', include_orig_code=True)
