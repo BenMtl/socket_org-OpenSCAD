@@ -6,10 +6,17 @@ import itertools
 SEGMENTS = 48
 
 TOLERANCE = 0.3
-DISTANCE_BETWEEN_SOCKS = 1
+DISTANCE_BETWEEN_SOCKS = 0.5
 BASE_THICKNESS = 2
 SIDE_HEIGHT = 5
 TEXT_SIZE = 5
+
+def chopped_cube(size):
+    sphr1 = sphere(d=size*1.5)
+    sphr2 = sphere(d=size*2)
+    sphr = sphr2-sphr1
+    c = cube(size, center=True)
+    return c-sphr
 
 def create_socket(diameter, height, socket_type):
     s = cylinder(r=diameter/2, h=height)
@@ -21,7 +28,7 @@ def create_socket(diameter, height, socket_type):
         cube_size = 13
     elif socket_type == "3/4":
         cube_size = 19
-    c = cube(cube_size-(TOLERANCE/2), center=True)
+    c = chopped_cube(cube_size-(TOLERANCE/2))
     return s-c
 
 def rounded_box(size, radius, sidesonly=False):
@@ -52,15 +59,17 @@ def rounded_box(size, radius, sidesonly=False):
 
 def create_base(width, height, depth, socket_name):
     base = union()(
-        # translate([0, -height/4, 0])(cube(size=(width, depth, height), center=True)),
-        translate([0, -height/4, 0])(rounded_box((width, depth, height), 1)),
+        translate([0, -height/4, 0])(cube(size=(width, depth, height), center=True)),
+        # translate([0, -height/4, 0])(rounded_box((width, depth, height), 1)),
         translate([0, -(1+depth/2), height/2])(linear_extrude(1)(text(socket_name, size=5, halign="center", valign="bottom")))
         )
     return base
 
 def create_socket_organizer(sockets, base_depth):
-    offset = 0
-    organizer = difference()
+    base = create_base(DISTANCE_BETWEEN_SOCKS, SIDE_HEIGHT+BASE_THICKNESS, base_depth, "")
+    base = up((SIDE_HEIGHT+BASE_THICKNESS)/2)(base)
+    offset = DISTANCE_BETWEEN_SOCKS/2
+    organizer = right(offset)(base)
     for s in sockets:
         base_width = s[1]+TOLERANCE+DISTANCE_BETWEEN_SOCKS
 
@@ -78,6 +87,17 @@ def create_socket_organizer(sockets, base_depth):
         # offset needs to take into account the current and previous bases
         offset += (base_width/2)
     
+    offset += DISTANCE_BETWEEN_SOCKS/2
+    base = create_base(DISTANCE_BETWEEN_SOCKS, SIDE_HEIGHT+BASE_THICKNESS, base_depth, "")
+    base = up((SIDE_HEIGHT+BASE_THICKNESS)/2)(base)
+    organizer += right(offset)(base)
+    offset += DISTANCE_BETWEEN_SOCKS/2
+
+    return intersection() (
+        # Round the corners
+        translate([offset/2,-(SIDE_HEIGHT+BASE_THICKNESS)/4,(SIDE_HEIGHT+BASE_THICKNESS)/2])(rounded_box((offset, base_depth, SIDE_HEIGHT+BASE_THICKNESS+5), 2, sidesonly=True)),
+        organizer
+    )
     return organizer
 
 def assembly():
