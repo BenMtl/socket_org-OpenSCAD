@@ -11,6 +11,8 @@ BASE_THICKNESS = 2
 SIDE_HEIGHT = 5
 TEXT_SIZE = 5
 SIDE_THICKNESS = 1
+CORNER_RADIUS = 2
+FONT_SIZE = 5
 
 def chopped_cube(size):
     sphr1 = sphere(d=size*1.5)
@@ -19,8 +21,8 @@ def chopped_cube(size):
     c = cube(size, center=True)
     return c-sphr
 
-def create_socket(diameter, height, socket_type):
-    s = cylinder(r=diameter/2, h=height)
+def create_socket(diameter, z, socket_type):
+    s = cylinder(r=diameter/2, h=z)
     if socket_type == "1/4":
         cube_size = 6
     elif socket_type == "3/8":
@@ -58,48 +60,53 @@ def rounded_box(size, radius, sidesonly=False):
             corners
         )
 
-def create_base(width, height, depth, socket_name):
+def create_base(size, socket_name, font_size):
     base = union()(
-        translate([0, -height/4, 0])(cube(size=(width, depth, height), center=True)),
-        # translate([0, -height/4, 0])(rounded_box((width, depth, height), 1)),
-        translate([0, -(1+depth/2), height/2])(linear_extrude(1)(text(socket_name, size=5, halign="center", valign="bottom")))
+        translate([0, -font_size/2, 0])(cube(size=size, center=True)),
+        translate([0, -(1+size[1]/2), size[2]/2])(linear_extrude(1)(text(socket_name, size=font_size, halign="center", valign="bottom")))
         )
     return base
 
-def create_socket_organizer(sockets, base_depth):
-    base = create_base(SIDE_THICKNESS, SIDE_HEIGHT+BASE_THICKNESS, base_depth, "")
+def create_socket_organizer(sockets, depth, socket_size, font_size):
+    # Create the left side of the organizer
+    base = create_base((SIDE_THICKNESS, depth, SIDE_HEIGHT+BASE_THICKNESS), "", font_size)
+    # Shift so bottom of base is at z=0
     base = up((SIDE_HEIGHT+BASE_THICKNESS)/2)(base)
+    # Shift so left side of base is at x=0
     offset = SIDE_THICKNESS/2
     organizer = right(offset)(base)
     offset += SIDE_THICKNESS/2
 
+    # Create the socket holders
     for s in sockets:
-        base_width = s[1]+TOLERANCE+DISTANCE_BETWEEN_SOCKS
+        x = s[1]+TOLERANCE+DISTANCE_BETWEEN_SOCKS
 
         # offset needs to take into account the current and previous bases
-        offset += (base_width/2)
+        offset += (x/2)
 
-        socket = create_socket(s[1]+TOLERANCE, s[2], "3/8")
+        socket = create_socket(s[1]+TOLERANCE, s[2], socket_size)
         socket = up(BASE_THICKNESS)(socket)
 
-        base = create_base(base_width, SIDE_HEIGHT+BASE_THICKNESS, base_depth, s[0])
+        base = create_base((x, depth, SIDE_HEIGHT+BASE_THICKNESS), s[0], font_size)
         base = up((SIDE_HEIGHT+BASE_THICKNESS)/2)(base)
 
         organizer += right(offset)(base - socket)
 
         # offset needs to take into account the current and previous bases
-        offset += (base_width/2)
+        offset += (x/2)
     
-    base = create_base(SIDE_THICKNESS, SIDE_HEIGHT+BASE_THICKNESS, base_depth, "")
+    # Create the right side of the organizer
+    base = create_base((SIDE_THICKNESS, depth, SIDE_HEIGHT+BASE_THICKNESS), "", font_size)
     base = up((SIDE_HEIGHT+BASE_THICKNESS)/2)(base)
     offset += SIDE_THICKNESS/2
     organizer += right(offset)(base)
     offset += SIDE_THICKNESS/2
 
     print(f"Total width: {offset}")
+
     return intersection() (
         # Round the corners
-        translate([offset/2,-(SIDE_HEIGHT+BASE_THICKNESS)/4,(SIDE_HEIGHT+BASE_THICKNESS)/2])(rounded_box((offset, base_depth, SIDE_HEIGHT+BASE_THICKNESS+5), 2, sidesonly=True)),
+        translate([offset/2,-font_size/2,(SIDE_HEIGHT+BASE_THICKNESS)/2])(rounded_box((offset, depth, SIDE_HEIGHT+BASE_THICKNESS*1.5), CORNER_RADIUS, sidesonly=True)),
         organizer
     )
 
@@ -110,7 +117,7 @@ def assembly1():
         ("3/4", 25.85, 25.8),
         ("11/16", 23.9, 25.5),
     ]
-    return create_socket_organizer(sockets_3_8, sockets_3_8[0][1]+10)
+    return create_socket_organizer(sockets_3_8, sockets_3_8[0][1]+10, "3/8", 5)
 
 def assembly2():
     sockets_3_8 = [
@@ -121,7 +128,7 @@ def assembly2():
         ("3/8", 17, 25.5),
         ('->1/4', 16.1, 25.5),
     ]
-    return create_socket_organizer(sockets_3_8, sockets_3_8[0][1]+10)
+    return create_socket_organizer(sockets_3_8, sockets_3_8[0][1]+10, "3/8", 5)
 
 def assembly3():
     sockets_3_8 = [
@@ -130,7 +137,7 @@ def assembly3():
         ("16", 21.9, 25.5),
         ("15", 21.8, 25.5),
     ]
-    return create_socket_organizer(sockets_3_8, sockets_3_8[0][1]+10)
+    return create_socket_organizer(sockets_3_8, sockets_3_8[0][1]+10, "3/8", 5)
 
 def assembly4():
     sockets_3_8 = [
@@ -140,8 +147,40 @@ def assembly4():
         ("11", 17.0, 25.5),
         ("10", 17, 25.5),
     ]
-    return create_socket_organizer(sockets_3_8, sockets_3_8[0][1]+10)
+    return create_socket_organizer(sockets_3_8, sockets_3_8[0][1]+10, "3/8", 5)
+
+def assembly5():
+    sockets_1_4 = [
+        ("1/2", 17.3, 20.6),
+        ("7/16", 15.9, 20.6),
+        ("3/8", 13.9, 20.6),
+        ("13/32", 13.9, 20.6),
+        ("11/32", 13.9, 20.6),
+        ("5/16", 12.0, 20.6),
+        ("9/32", 12.0, 20.6),
+        ("1/4", 11.6, 20.6),
+        ("7/32", 11.6, 20.6),
+        ("3/16", 11.6, 20.6),
+        ("5/32", 11.6, 20.6),
+    ]
+    return create_socket_organizer(sockets_1_4, sockets_1_4[0][1]+8, "1/4", 4)
+
+def assembly6():
+    sockets_1_4 = [
+        ("11", 16.0, 20.6),
+        ("10", 13.9, 20.6),
+        ("9", 13.9, 20.6),
+        ("8", 12.0, 20.6),
+        ("7", 11.8, 20.6),
+        ("6", 11.6, 20.6),
+        ("5.5", 11.6, 20.6),
+        ("5", 11.6, 20.6),
+        ("4.5", 11.6, 20.6),
+        ("4", 11.6, 20.6),
+        ("Angle", 14.1, 20.6),
+    ]
+    return create_socket_organizer(sockets_1_4, sockets_1_4[0][1]+8, "1/4", 4)
 
 if __name__ == '__main__':
-    a = assembly4()
+    a = assembly6()
     scad_render_to_file(a, file_header=f'$fn = {SEGMENTS};', include_orig_code=True)
